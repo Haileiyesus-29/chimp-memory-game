@@ -2,9 +2,9 @@ import { Layer, Stage } from 'react-konva'
 import Rectangle from './Rectangle'
 import { useEffect, useRef, useState } from 'react'
 
-const INITIAL_RENDER = 3
-const BOX_WIDTH = 80
-const BOX_HEIGHT = 80
+const INITIAL_RENDER = 4
+let BOX_WIDTH = 50
+let BOX_HEIGHT = 50
 
 const generateBoxes = (width, height) => {
    const rects = []
@@ -34,29 +34,34 @@ const generateBoxes = (width, height) => {
 const chooseRandom = arr =>
    arr.splice(Math.floor(Math.random() * arr.length), 1).at(0)
 
-const GameScreen = () => {
+const addBoxes = (boxes, size) =>
+   Array.from({ length: size }, () => chooseRandom(boxes))
+
+function GameScreen({ setPage }) {
    const totalBoxes = useRef([])
    const canvasElement = useRef(null)
    const currentNumber = useRef(1)
 
    const [screen, setScreen] = useState({ width: null, height: null })
    const [level, setLevel] = useState(1)
-   const [boxCount, setBoxCount] = useState(INITIAL_RENDER)
    const [boxes, setBoxes] = useState([])
    const [failure, setFailure] = useState(false)
 
    useEffect(() => {
       const width = +canvasElement.current.clientWidth
       const height = +canvasElement.current.clientHeight
-
+      if (width > 500) {
+         BOX_WIDTH = 80
+         BOX_HEIGHT = 80
+      }
       setScreen({ width, height })
-
       totalBoxes.current = generateBoxes(width, height)
-      setBoxes(addBoxes(boxCount))
-   }, [boxCount])
+   }, [])
 
-   const addBoxes = size =>
-      Array.from({ length: size }, () => chooseRandom(totalBoxes.current))
+   useEffect(() => {
+      setBoxes(addBoxes(totalBoxes.current, level + INITIAL_RENDER - 1))
+      currentNumber.current = 1
+   }, [level])
 
    const handleClick = e => {
       const id = +e.target.id()
@@ -74,37 +79,56 @@ const GameScreen = () => {
          )
       )
 
-      if (id === boxes.length) {
-         setLevel(prev => prev + 1)
-         setBoxCount(prev => prev + 1)
-         currentNumber.current = 1
-         return
-      }
-      currentNumber.current++
+      if (id === boxes.length) setLevel(prev => prev + 1)
+      else currentNumber.current++
    }
 
    const onPlayAgain = () => {
-      setBoxCount(INITIAL_RENDER)
-      setLevel(1)
+      if (level === 1) {
+         setBoxes(addBoxes(totalBoxes.current, level + INITIAL_RENDER - 1))
+         currentNumber.current = 1
+      } else {
+         setLevel(1)
+      }
       setFailure(false)
-      setBoxes([])
    }
 
    return (
       <section className='flex flex-col justify-end gap-4 h-full p-2'>
-         <div className='py-1 rounded-md text-3xl'>Level {level}</div>
+         <div className='py-1 rounded-md text-3xl'>ደረጃ {level}</div>
          <div className='bg-blue-400 grow rounded-lg' ref={canvasElement}>
             {failure ? (
-               <div className='w-full h-full bg-red-700 flex  flex-col justify-center items-center gap-6'>
+               <div className='w-full h-full bg-blue-500 flex  flex-col justify-center items-center gap-6'>
                   <p className='text-4xl'>
-                     Game Over <br />
-                     Level {level}
+                     {level <= 3 && (
+                        <>
+                           ጨዋታውን ተሳስተዋል 🙄 <br />
+                           ከአማካኝ በታች ውጤት <br />
+                           ደረጃ {level}
+                        </>
+                     )}
+                     {level > 3 &&
+                        level <
+                        (
+                           <>
+                              ጨዋታውን ተሳስተዋል <br />
+                              አማካኝ ውጤት <br />
+                              ደረጃ {level}
+                           </>
+                        )}
+                     {level >= 7 && (
+                        <>
+                           ጨዋታውን ተሳስተዋል <br />
+                           ከአማካኝ በላይ ውጤት <br />
+                           ደረጃ {level}
+                        </>
+                     )}
                   </p>
                   <div
-                     className='bg-blue-500 py-3 px-6 rounded-md text-lg border-none'
+                     className='bg-yellow-500 py-3 px-6 rounded-md text-lg border-none cursor-pointer active:scale-'
                      onClick={onPlayAgain}
                   >
-                     Play Again
+                     በድጋሜ ልሞክር
                   </div>
                </div>
             ) : (
@@ -122,7 +146,12 @@ const GameScreen = () => {
                </Stage>
             )}
          </div>
-         <div className='bg-green-500 py-3 rounded-md text-lg'>Cancel</div>
+         <button
+            onClick={() => setPage(1)}
+            className='border border-green-500 py-3 rounded-md text-lg cursor-pointer transition active:scale-95'
+         >
+            አቋርጥ
+         </button>
       </section>
    )
 }
